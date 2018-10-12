@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+		#info {
+		  position: absolute;
+		  top: 0px;
+		  width: 100%;
+		  padding: 10px;
+		  text-align: center;
+		  color: #ffff00
+		}
+
+		body {
+		  overflow: hidden
+		}
+
+    </style>
+</head>
+	<body>
+	   <div id="info">隨便點點看
+	<p id = 'msg'>
+	</p>
+	</div>
+	 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/84/three.min.js"></script>
+		<script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/stats.js/r16/Stats.min.js"></script>
+
+    <script>
+         var camera, scene, renderer, mesh, line, stats, clock;
+		var raycaster;
+		var allCircle=[];
+		var circle;
+		var wallLength = 200;
+		var mouse = new THREE.Vector2();
+		var pickables = [];
+
+		window.addEventListener('resize',onWindowResize,false);
+		document.addEventListener('mousedown',onDocumentMouseDown,false);
+
+		init();
+		animate();
+
+		class Circle{
+			constructor(point){
+			point.z = 0;
+			this.pos = point.clone();
+			this.vel = new THREE.Vector3(0,500,0);
+
+			this.circle = buildVehicle();
+			this.circle.rotation.x = Math.PI / 2;
+			scene.add(this.circle);
+			}
+		  checkWall() {
+			if (this.pos.x >= wallLength / 2 - 1 - 5 && this.vel.x > 0) {
+			  this.pos.x = wallLength / 2 - 1 - 5;
+			  this.vel.x *= -0.9;
+			}
+			if (this.pos.y >= wallLength / 2 - 1 - 5 && this.vel.y > 0) {
+			  this.pos.y = wallLength / 2 - 1 - 5;
+			  this.vel.y *= -0.9;
+			}
+			if (this.pos.x <= -wallLength / 2 + 1 + 5 && this.vel.x < 0) {
+			  this.pos.x = -wallLength / 2 + 1 + 5;
+			  this.vel.x *= -0.9;
+			}
+			if (this.pos.y <= -wallLength / 2 + 1 + 5 && this.vel.y < 0) {
+			  this.pos.y = -wallLength / 2 + 1 + 5;
+			  this.vel.y *= -0.9;
+			} 
+			}
+		   checkCollision(anotherCircle) {
+			if(this.pos.distanceTo(anotherCircle.pos)<5.0+5.0){
+				var delta = this.pos.clone().sub(anotherCircle.pos);
+			  var d = delta.length();
+			  var diff = (d-10.0)/d;
+			  
+			  delta.multiplyScalar(0.5 * diff);
+			  
+			  this.pos.sub(delta);
+			  anotherCircle.pos.add(delta);
+				
+			  let nextV1 = new THREE.Vector3().copy(this.vel);
+			  let nextV2 = new THREE.Vector3().copy(anotherCircle.vel);
+			  
+			  let X1_Sub_X2 = this.pos.clone().sub(anotherCircle.pos);
+			  let X2_Sub_X1 = X1_Sub_X2.clone().multiplyScalar(-1);
+			  nextV1.sub(X1_Sub_X2.multiplyScalar(this.vel.clone().sub(anotherCircle.vel).dot(X1_Sub_X2) / X1_Sub_X2.lengthSq()));
+			  nextV2.sub(X2_Sub_X1.multiplyScalar(anotherCircle.vel.clone().sub(this.vel).dot(X2_Sub_X1) / X2_Sub_X1.lengthSq()));
+			  
+			  this.vel.copy(nextV1);
+			  anotherCircle.vel.copy(nextV2);
+			}
+		  
+		  }
+		   update(dt) {
+			 let x = this.vel.length() * 0.95;
+			 this.vel.normalize().multiplyScalar(x);
+			 this.pos.add(this.vel.clone().multiplyScalar(dt));
+			 this.circle.position.copy(this.pos);
+		   }
+		  
+		}
+
+
+
+		function buildVehicle(){
+			var circle = new THREE.Object3D();
+		  var mat = new THREE.MeshNormalMaterial();
+		  var body = new THREE.Mesh(new THREE.CylinderGeometry(5, 5, 2, 20), mat);
+		  circle.add(body);
+			return circle;
+		}
+		function buildWall() {
+		  var totalWall = new THREE.Object3D();
+		  var mat = new THREE.MeshNormalMaterial();
+		  var wall1 = new THREE.Mesh(new THREE.BoxGeometry(wallLength, 2, 2), mat);
+		  wall1.position.y = wallLength / 2;
+		  var wall2 = new THREE.Mesh(new THREE.BoxGeometry(wallLength, 2, 2), mat);
+		  wall2.position.y = -wallLength / 2;
+		  var wall3 = new THREE.Mesh(new THREE.BoxGeometry(wallLength, 2, 2), mat);
+		  wall3.position.x = wallLength / 2;
+		  wall3.rotation.z = Math.PI / 2;
+		  var wall4 = new THREE.Mesh(new THREE.BoxGeometry(wallLength, 2, 2), mat);
+		  wall4.position.x = -wallLength / 2;
+		  wall4.rotation.z = Math.PI / 2;
+		  totalWall.add(wall1);
+		  totalWall.add(wall2);
+		  totalWall.add(wall3);
+		  totalWall.add(wall4);
+		  return totalWall;
+		}
+
+		function init(){
+			scene = new THREE.Scene();
+			clock = new THREE.Clock();	  
+		  raycaster = new THREE.Raycaster();
+		  
+		  camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1000);
+		  camera.position.z = 250;
+			camera.lookAt(new THREE.Vector3());
+		  scene.add(camera);
+		  
+		  stats = new Stats();
+		  stats.domElement.style.position = 'absolute';
+		  stats.domElement.style.top = '0px';
+		  stats.domElement.style.zIndex = 100;
+		  document.body.appendChild(stats.domElement);
+		  
+		  var plane = new THREE.Mesh(new THREE.PlaneGeometry(wallLength, wallLength), new THREE.MeshBasicMaterial({
+			transparent: true,
+			opacity: 0.0,
+			visible: true
+		  }));
+		  
+		  scene.add(plane);
+		  pickables = [plane];
+		  
+		  var gridXZ = new THREE.GridHelper(wallLength, 24, 'red', 'white');
+		  scene.add(gridXZ);
+			gridXZ.rotation.x = Math.PI / 2;
+		  scene.add(new THREE.AxisHelper(50));
+		  
+		  
+		  renderer = new THREE.WebGLRenderer();
+		  renderer.setSize(window.innerWidth, window.innerHeight);
+		  renderer.setClearColor(0x888888);
+
+		  controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+		  document.body.appendChild(renderer.domElement);
+
+		  document.addEventListener('mousedown',onDocumentMouseDown,false);
+
+			 scene.add(buildWall());
+		}
+
+		function onDocumentMouseDown(event){
+			event.preventDefault();
+		  mouse.x=(event.clientX/window.innerWidth)*2-1;
+		  mouse.y=-(event.clientY/window.innerHeight)*2+1;
+		  
+		  raycaster.setFromCamera(mouse,camera);
+		  var intersects = raycaster.intersectObjects(pickables);
+			if(intersects.length > 0){
+			allCircle[allCircle.length] = new Circle(intersects[0].point);
+		  }
+		}
+
+		function onWindowResize(){
+			var width = window.innerWidth;
+		  var height = window.innerHeight;
+		  camera.aspect=width/height;
+		  camera.updateProjectionMatrix();
+		  renderer.setSize(width,height);
+		}
+
+		function animate() {
+			stats.update();
+		  var dt = clock.getDelta();
+		  for (let i = 0; i < allCircle.length; i++) {
+			allCircle[i].checkWall();
+			for (let j = i + 1; j < allCircle.length; j++) {
+			  allCircle[i].checkCollision(allCircle[j]);
+			}
+			allCircle[i].update(dt);
+		  }
+		  requestAnimationFrame(animate);
+		  render();
+		}
+		function render() {
+			renderer.render(scene, camera);
+		}
+
+    </script>
+</body>
+</html>

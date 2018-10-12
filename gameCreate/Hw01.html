@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        #title {
+		  position: absolute;
+		  top: 0;
+		  width: 100%;
+		  padding: 10px;
+		  text-align: center;
+		  color: #ffff00
+		}
+
+		body {
+		  overflow: hidden
+		}
+
+    </style>
+		</head>
+		<body>
+			
+		  <div id="title">Homework10 Demo</div>
+		  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/84/three.min.js"></script>
+		  <script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
+		  <script src="https://cdnjs.cloudflare.com/ajax/libs/stats.js/r16/Stats.min.js"></script>
+		  <script src="https://rawgit.com/mrdoob/three.js/master/examples/js/loaders/MTLLoader.js"></script>
+		  <script src="https://rawgit.com/mrdoob/three.js/master/examples/js/loaders/OBJLoader.js"></script>
+
+		  <script>
+
+
+		  </script>
+
+			<script>
+				var renderer, scene, camera, angle = 0,
+		  light, controls, mesh, clock, allTrain, loader;
+		var trainPlank;
+
+		window.addEventListener('resize', onWindowResize, false);
+
+		init();
+		animate();
+
+
+		function buildTrain() {
+		  var train = new THREE.Object3D();
+		  let mat = new THREE.MeshNormalMaterial();
+		  var body1 = new THREE.Mesh(new THREE.BoxGeometry(30, 10, 20), mat)
+		  var body2 = new THREE.Mesh(new THREE.CylinderGeometry(5, 5, 10, 10), mat);
+		  body1.position.x = 15;
+		  body1.position.y = 5;
+		  body2.position.x = 25;
+		  body2.position.y = 10;
+
+		  train.add(body1, body2);
+		  return train;
+
+		}
+
+		function init() {
+		  scene = new THREE.Scene();
+
+
+		  camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1000);
+		  camera.position.y = 300;
+		  camera.position.z = 300;
+
+		  var gridXZ = new THREE.GridHelper(240, 24, 'red', 'white');
+		  scene.add(gridXZ);
+		  stats = new Stats();
+		  stats.domElement.style.position = 'absolute';
+		  stats.domElement.style.top = '0px';
+		  stats.domElement.style.zIndex = 100;
+		  document.body.appendChild(stats.domElement);
+
+		  renderer = new THREE.WebGLRenderer();
+		  renderer.setSize(window.innerWidth, window.innerHeight);
+		  renderer.setClearColor(0x888888);
+		  var light = new THREE.PointLight(0xffffff, 1);
+		  light.position.set(50, 50, 50);
+		  scene.add(light);
+
+		  controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+		  document.body.appendChild(renderer.domElement);
+		  /////////////////////////////////////////////////////////////////////
+		  loader = new THREE.TextureLoader();
+		  loader.crossOrigin = '';
+		  allTrain = buildTrain();
+		  scene.add(allTrain);
+
+		  var mat = loader.load('https://media.playmobil.com/i/playmobil/6880_product_extra3?locale=fr-FR,fr,*&$pdp_product_zoom_xl$&strip=true');
+		  mat.repeat.set(1344 / 1920, 1);
+		  mat.offset.set(0.15, 0);
+		  var railway = new THREE.Mesh(new THREE.RingBufferGeometry(42.5, 85, 30, 10, 0), new THREE.MeshBasicMaterial({
+			map: mat,
+			transparent: true
+		  }));
+		  railway.rotation.x = -Math.PI / 2;
+		  scene.add(railway);
+
+		}
+
+
+		function onWindowResize() {
+		  var width = window.innerWidth;
+		  var height = window.innerHeight;
+		  camera.aspect = width / height;
+		  camera.updateProjectionMatrix();
+		  renderer.setSize(width, height);
+		}
+
+		function animate() {
+		  angle += 0.01;
+		  allTrain.position.set(60 * Math.cos(angle), 2, -60 * Math.sin(angle));
+		  allTrain.rotation.y = angle + Math.PI / 2;
+		  controls.update();
+		  requestAnimationFrame(animate);
+		  stats.update();
+		  render();
+		}
+
+		function render() {
+		  renderer.render(scene, camera);
+		}
+
+
+    </script>
+</body>
+</html>
