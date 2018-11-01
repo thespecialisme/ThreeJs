@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+    #title {
+   position: absolute;
+   top: 0px;
+   width: 100%;
+   padding: 10px;
+   text-align: center;
+   color: #ffff00
+ }
+
+ body {
+   overflow: hidden;
+ }
+
+
+    </style>
+</head>
+<body>
+<div id="title">CG作業 Hw4-1 <br>WASD控制位子QE旋轉滑鼠改變圓點位子</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/96/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/stats.js/r16/Stats.min.js"></script>
+<script src="https://jyunming-chen.github.io/tutsplus/js/KeyboardState.js"></script>
+
+<script>
+     var renderer, camera, control, scene, clock, stats;
+ var pickables = [],
+   mouse = new THREE.Vector2(),
+   raycaster = new THREE.Raycaster();
+ var circle, rectangle;
+ var keyboard = new KeyboardState();
+ init();
+ animate();
+
+
+
+ function init() {
+   scene = new THREE.Scene();
+   clock = new THREE.Clock();
+   stats = new Stats();
+   stats.domElement.style.position = 'absolute';
+   stats.domElement.style.top = '0px';
+   stats.domElement.style.zIndex = 100;
+   document.body.appendChild(stats.domElement);
+   renderer = new THREE.WebGLRenderer();
+   renderer.setSize(window.innerWidth, window.innerHeight);
+   document.body.appendChild(renderer.domElement);
+   let wh = window.innerWidth / window.innerHeight;
+   camera = new THREE.OrthographicCamera(-150 * wh, 150 * wh, 150, -150, 1, 50);
+   camera.position.z = 40;
+   document.addEventListener('mousedown', onDocumentMouseDown, false);
+   
+   circle = new THREE.Mesh(new THREE.CircleGeometry(10, 64), new THREE.MeshBasicMaterial({
+     color: 0xff0000
+   }));
+   rectangle = new THREE.Mesh(new THREE.PlaneGeometry(300, 200), new THREE.MeshBasicMaterial({
+     color: 0xffff00
+   }));
+   plane = new THREE.Mesh(new THREE.PlaneGeometry(300 * wh, 300), new THREE.MeshBasicMaterial({
+     transparent: true,
+     opacity: 0.0,
+     visible: true
+   }));
+   pickables.push(plane);
+   rectangle.position.z = -1;
+   scene.add(plane, circle, rectangle);
+ }
+
+ function animate() {
+   stats.update();
+   keyboard.update();
+   if (keyboard.pressed("W")) {
+     rectangle.position.y += 1;
+   }
+   if (keyboard.pressed("S")) {
+     rectangle.position.y -= 1;
+   }
+   if (keyboard.pressed("A")) {
+     rectangle.position.x -= 1;
+   }
+   if (keyboard.pressed("D")) {
+     rectangle.position.x += 1;
+   }
+   if (keyboard.pressed("E")) {
+     rectangle.rotation.z -= 0.01;
+   }
+   if (keyboard.pressed("Q")) {
+     rectangle.rotation.z += 0.01;
+   }
+   if (check_Intersect()) {
+     circle.material.color.copy(new THREE.Color(0xff0000));
+   } else {
+     circle.material.color.copy(new THREE.Color(0x00ff00));
+   }
+   requestAnimationFrame(animate);
+   render();
+ }
+
+ function render() {
+   renderer.render(scene, camera);
+ }
+
+ function check_Intersect() {
+   let circle2D = new THREE.Vector3(circle.position.x, circle.position.y, 0);
+   let rectangle2D = new THREE.Vector3(rectangle.position.x, rectangle.position.y, 0);
+   let normalMat = new THREE.Matrix3().getNormalMatrix(rectangle.matrixWorld);
+   let Rmax = new THREE.Vector3(150, 100, 0);
+   let Rmin = new THREE.Vector3(-150, -100, 0);
+   let x = new THREE.Vector3(1, 0, 0).applyMatrix3(normalMat).normalize();
+   let y = new THREE.Vector3(0, 1, 0).applyMatrix3(normalMat).normalize();
+   let newCircle = new THREE.Vector3(
+     circle2D.clone().sub(rectangle2D).dot(x),
+     circle2D.clone().sub(rectangle2D).dot(y),
+   );
+   Rmax.sub(newCircle);
+   Rmin.sub(newCircle);
+   if (Rmax.x < 0) {
+     if (Rmax.y < 0) {
+       return (Rmax.x * Rmax.x + Rmax.y * Rmax.y) < 100;
+     } else if (Rmin.y > 0) {
+       return (Rmax.x * Rmax.x + Rmin.y * Rmin.y) < 100;
+     } else {
+       return Math.abs(Rmax.x) < 10;
+     }
+   } else if (Rmin.x > 0) {
+     if (Rmax.y < 0) {
+       return (Rmin.x * Rmin.x + Rmax.y * Rmax.y) < 100;
+     } else if (Rmin.y > 0) {
+       return (Rmin.x * Rmin.x + Rmin.y * Rmin.y) < 100;
+     } else {
+       return Rmin.x < 10;
+     }
+   } else {
+     if (Rmax.y < 0) {
+       return -Rmax.y < 10;
+     } else if (Rmin.y > 0) {
+       return Rmin.y < 10;
+     } else return true;
+   }
+ }
+
+ function onDocumentMouseDown(event) {
+   event.preventDefault();
+   mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+   mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+   raycaster.setFromCamera(mouse, camera);
+   var intersects = raycaster.intersectObjects(pickables);
+   if (intersects.length > 0) {
+     circle.position.copy(intersects[0].point);
+     circle.position.z = 0;
+   }
+ }
+
+
+
+
+
+</script>
+</body>
+</html>
