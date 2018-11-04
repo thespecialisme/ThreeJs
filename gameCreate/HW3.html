@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+	<style>
+    body {
+	  background-color: #fff;
+	  color: #111;
+	  margin: 0px;
+	  overflow: hidden;
+	  font-family: Monospace;
+	  font-size: 20px;
+	}
+
+	#info {
+	  position: absolute;
+	  top: 0px;
+	  width: 100%;
+	  padding: 5px;
+	  text-align: center;
+	  color: #ffff00
+	}
+
+	a {
+	  color: #00ffff
+	}
+
+	strong {
+	  color: red
+	}
+
+	#container {
+	  z-index: 0;
+	  left: 0px;
+	  top: 0px;
+	  overflow: hidden;
+	  position: absolute;
+	  width: 100%;
+	  height: 100%;
+	}
+</style>
+</head>
+<body>
+<div id="info">
+  GamePrograme HW4
+  <br> 音樂 <br> BGM <br>
+  <button id="play" style="width:20%">Play</button>
+
+  <br>
+</div>
+<audio id="soundtrack" autoplay loop style="display:none">
+<source src="https://thespecialisme.github.io/ThreeJs/music/dancemusic2.mp3" type='audio/mp3'>
+</audio>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/84/three.min.js"></script>
+<script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
+<script src="https://rawgit.com/jyunming-chen/game3js/master/js/ccdbox.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.5/dat.gui.min.js"></script>
+<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+
+
+<script>
+    var scene, renderer, camera;
+var clock = new THREE.Clock();
+var lowerArm, upperArm, Rightleg, Leftleg, upperRightArm, lowerRightArm;
+var head, body;
+var sign = 1;
+var zz = 30;
+var gcontrols;
+var theta1 = 0,
+  theta2 = 0,
+  theta3 = 0;
+var tsphere;
+var period = 4;
+var dt = 0;
+var torsoTurn = 0;
+var axes = [];
+var joints = [];
+var soundTrack;
+var isDimming = false
+var isPaused = false;
+//<source src="https://thespecialisme.github.io/ThreeJs/music/dancemusic.mp3" type='audio/mp3'>
+/////////////////////////////////actions/////////////////////////
+var newaction1 = {
+  LeftArmz: 0,
+  LeftArmx: 0,
+  Leftlowarmx: 0,
+  Leftlowarmz: 0,
+  RightArmz: 0.01,
+  RightArmx: 0,
+  Rightlowarmx: 0,
+  Rightlowarmz: 0,
+  LeftLegx: 0.01,
+  LeftLegz: 0,
+  RightLegx: 0.01,
+  RightLegz: 0.1,
+  Head: 0.29119411785107385,
+  Bodymovex: 0.01,
+  Bodymovez: 0.01,
+  Jump: 0.01
+}
+var newaction2 = {
+  LeftArmz: 0,
+  LeftArmx: 0,
+  Leftlowarmx: 0,
+  Leftlowarmz: 0,
+  RightArmz: 0.01,
+  RightArmx: 0,
+  Rightlowarmx: 0,
+  Rightlowarmz: 0,
+  LeftLegx: 0.01,
+  LeftLegz: 0,
+  RightLegx: 0.01,
+  RightLegz: 0.1,
+  Head: -0.2290431103249747,
+  Bodymovex: 0.01,
+  Bodymovez: 0.01,
+  Jump: 0.01
+}
+var action1 = {
+  LeftArmz: -0.8497034647799393,
+  LeftArmx: 0.8897721360940603,
+  Leftlowarmx: 0.9090434571497942,
+  Leftlowarmz: 0,
+  RightArmz: 0.471464988034544,
+  RightArmx: 0.42481011341171726,
+  Rightlowarmx: 0.7231670308327269,
+  Rightlowarmz: 0.062151007526099145,
+  LeftLegx: 0.01,
+  LeftLegz: -0.08272638990046105,
+  RightLegx: 0.05116012901883277,
+  RightLegz: 0.11922103145701113,
+  Head: -0.25071966149897673,
+  Bodymovex: -17.629105538792317,
+  Bodymovez: 10.550410987410316,
+  Jump: 0
+}
+var action2 = {
+  LeftArmz: -0.9472479450629484,
+  LeftArmx: 0.08665591509728543,
+  Leftlowarmx: 0.03276887594076239,
+  Leftlowarmz: 0.45232892865813557,
+  RightArmz: 1.4469097908646351,
+  RightArmx: 1.4815419831443157,
+  Rightlowarmx: 1.0418123330905567,
+  Rightlowarmz: -0.04623174834391097,
+  LeftLegx: 0.005639371553428529,
+  LeftLegz: -0.08272638990046105,
+  RightLegx: 0.05116012901883277,
+  RightLegz: 0.5,
+  Head: -0.07730725210696054,
+  Bodymovex: -58.81455276939616,
+  Bodymovez: -17.629105538792317,
+  Jump: 0
+}
+var action3 = {
+  LeftArmz: -0.26443658308188467,
+  LeftArmx: -0.08242118405993026,
+  Leftlowarmx: 1.5463340616654537,
+  Leftlowarmz: -0.11126140186591704,
+  RightArmz: 0.032514826761003035,
+  RightArmx: 1.4815419831443157,
+  Rightlowarmx: 1.0418123330905567,
+  Rightlowarmz: -0.04623174834391097,
+  LeftLegx: 0.012142336905629159,
+  LeftLegz: -0.5,
+  RightLegx: -0.04638435126417634,
+  RightLegz: 0.40643533451253794,
+  Head: -0.07730725210696054,
+  Bodymovex: -4.623174834391094,
+  Bodymovez: -17.629105538792317,
+  Jump: 0
+}
+var action4 = {
+  LeftArmz: -1.5,
+  LeftArmx: -0.040151909270626396,
+  Leftlowarmx: -0.1,
+  Leftlowarmz: -1,
+  RightArmz: 0.6665539486005623,
+  RightArmx: 0.04438664030798156,
+  Rightlowarmx: -0.02033867443554256,
+  Rightlowarmz: -0.6098220788679636,
+  LeftLegx: 0.012142336905629159,
+  LeftLegz: -0.5,
+  RightLegx: 0.005639371553428529,
+  RightLegz: 0,
+  Head: 0.20448791315506576,
+  Bodymovex: 59,
+  Bodymovez: -17.629105538792317,
+  Jump: 0
+}
+$('#play').click(function() {
+  isPaused = !isPaused;
+  if (isPaused) {
+    $('#play').text('Play')
+    soundTrack.pause()
+  } else {
+    $('#play').text('Pause')
+    soundTrack.play()
+  }
+});
+var keys = [{
+  s: 0,
+  pose: newaction1
+}, {
+  s: 0.1,
+  pose: newaction2
+}, {
+  s: 0.2,
+  pose: newaction1
+}, {
+  s: 0.3,
+  pose: newaction2
+}, {
+  s: 0.4,
+  pose: newaction1
+}, {
+  s: 0.45,
+  pose: action3
+}, {
+  s: 0.575,
+  pose: action2
+}, {
+  s: 0.7,
+  pose: action3
+}, {
+  s: 0.825,
+  pose: action4
+}, {
+  s: 0.95,
+  pose: action3
+}, {
+  s: 0.98,
+  pose: newaction1
+}];
+
+init();
+animate();
+
+function buildBody() {
+
+  body = new THREE.Object3D();
+  let boxGeometry;
+  boxGeometry = new THREE.BoxGeometry(50, 100, 30);
+  let torso = new THREE.Mesh(boxGeometry, new THREE.MeshNormalMaterial());
+  torso.position.set(0, 80, 0);
+  body.add(torso);
+
+  let leftarm;
+  upperArm = new THREE.Object3D();
+  boxGeometry = new THREE.BoxGeometry(10, 40, 10);
+  leftarm = new THREE.Mesh(boxGeometry, new THREE.MeshNormalMaterial());
+  upperArm.add(leftarm);
+  leftarm.position.set(-5, -20, 0);
+  body.add(upperArm);
+  upperArm.position.set(-25, 130, 0);
+
+  lowerArm = new THREE.Object3D();
+  boxGeometry = new THREE.BoxGeometry(10, 60, 10);
+  leftarm = new THREE.Mesh(boxGeometry, new THREE.MeshNormalMaterial());
+  lowerArm.add(leftarm);
+  leftarm.position.set(-5, -30, 0);
+  lowerArm.position.set(0, -40, 0);
+  upperArm.add(lowerArm);
+  /////////////////////////////////////右手//////////////////////////////
+  let rightarm;
+  upperRightArm = new THREE.Object3D();
+  boxGeometry = new THREE.BoxGeometry(10, 40, 10);
+  rightarm = new THREE.Mesh(boxGeometry, new THREE.MeshNormalMaterial());
+  upperRightArm.add(rightarm);
+  rightarm.position.set(5, -20, 0);
+  body.add(upperRightArm);
+  upperRightArm.position.set(25, 130, 0);
+
+  lowerRightArm = new THREE.Object3D();
+  boxGeometry = new THREE.BoxGeometry(10, 60, 10);
+  rightarm = new THREE.Mesh(boxGeometry, new THREE.MeshNormalMaterial());
+  lowerRightArm.add(rightarm);
+  rightarm.position.set(5, -30, 0);
+  lowerRightArm.position.set(0, -40, 0);
+  upperRightArm.add(lowerRightArm);
+
+  ////////////////////////腳////////////////////////////////////////////
+  boxGeometry = new THREE.BoxGeometry(10, 30, 10);
+  Leftleg = new THREE.Mesh(boxGeometry, new THREE.MeshNormalMaterial());
+  body.add(Leftleg);
+  Leftleg.position.set(-20, 17, 5);
+
+  boxGeometry = new THREE.BoxGeometry(10, 30, 10);
+  Rightleg = new THREE.Mesh(boxGeometry, new THREE.MeshNormalMaterial());
+  body.add(Rightleg);
+  Rightleg.position.set(20, 17, 5);
+
+  ////////////////////////////頭//////////////////////////////////////////
+  boxGeometry = new THREE.BoxGeometry(70, 40, 50);
+  head = new THREE.Mesh(boxGeometry, new THREE.MeshNormalMaterial());
+  body.add(head);
+  head.position.set(0, 150, 0);
+
+
+  return body;
+}
+
+function init() {
+  var width = window.innerWidth;
+  var height = window.innerHeight;
+  soundTrack = document.getElementById('soundtrack');
+
+  renderer = new THREE.WebGLRenderer({
+    antialias: true
+  });
+  renderer.setSize(width, height);
+  renderer.setClearColor(0x888888);
+
+  document.body.appendChild(renderer.domElement);
+
+  scene = new THREE.Scene();
+
+  camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 10000);
+   camera.position.y = 300;
+  camera.position.z = -500;
+  camera.lookAt(new THREE.Vector3(0, 0, 0));
+  scene.add(camera);
+
+  let controls = new THREE.OrbitControls(camera, renderer.domElement);
+  let gridXZ = new THREE.GridHelper(200, 20, 'red', 'white');
+  scene.add(gridXZ);
+
+  window.addEventListener('resize', onWindowResize, false);
+  /////////////////////////////////////////////////////////////////////////////
+  let body = buildBody();
+  scene.add(body)
+  body.position.set(0, 0, -35);
+
+  for (var i = 0; i < 3; i++)
+    joints[i] = new THREE.Vector3();
+
+  /////////////////////////////////////////gui/////////////////////////////////////
+  gcontrol = {
+    LeftArmz: 0.01,
+    LeftArmx: 0,
+    Leftlowarmx: 0,
+    Leftlowarmz: 0,
+    RightArmz: 0.01,
+    RightArmx: 0,
+    Rightlowarmx: 0,
+    Rightlowarmz: 0,
+    LeftLegx: 0.01,
+    LeftLegz: 0.01,
+    RightLegz: 0.01,
+    RightLegx: 0.01,
+    Head: 0.01,
+    Bodymovex: 0.01,
+    Bodymovez: 0.01,
+    Jump: 0.01,
+  };
+
+  var gui = new dat.GUI({
+    load: loadJSON(),
+    preset: 'action1'
+  });
+  gui.domElement.id = 'gui';
+
+  gui.remember(gcontrol);
+
+  gui.add(gcontrol, 'LeftArmz', -1.5, 0);
+  gui.add(gcontrol, 'LeftArmx', -1.9, 2.0);
+  gui.add(gcontrol, 'Leftlowarmx', -0.1, 2.35);
+  gui.add(gcontrol, 'Leftlowarmz', -1.0, 1.0);
+  gui.add(gcontrol, 'RightArmz', 0, 1.5);
+  gui.add(gcontrol, 'RightArmx', -1.9, 2.0);
+  gui.add(gcontrol, 'Rightlowarmx', -0.1, 2.35);
+  gui.add(gcontrol, 'Rightlowarmz', -1.0, 1.0);
+  gui.add(gcontrol, 'LeftLegx', -0.3, 0.3);
+  gui.add(gcontrol, 'LeftLegz', -0.5, 0);
+  gui.add(gcontrol, 'RightLegx', -0.3, 0.3);
+  gui.add(gcontrol, 'RightLegz', 0.1, 0.5);
+  gui.add(gcontrol, 'Head', -0.5, 0.5);
+  gui.add(gcontrol, 'Bodymovex', -100, 100);
+  gui.add(gcontrol, 'Bodymovez', -100, 100);
+  gui.add(gcontrol, 'Jump', 0, 30);
+}
+
+
+function animate() {
+  upperArm.rotation.z = gcontrol.LeftArmz;
+  upperArm.rotation.x = gcontrol.LeftArmx;
+  lowerArm.rotation.x = gcontrol.Leftlowarmx;
+  lowerArm.rotation.z = gcontrol.Leftlowarmz;
+  upperRightArm.rotation.z = gcontrol.RightArmz;
+  upperRightArm.rotation.x = gcontrol.RightArmx;
+  lowerRightArm.rotation.x = gcontrol.Rightlowarmx;
+  lowerRightArm.rotation.z = gcontrol.Rightlowarmz;
+  Leftleg.rotation.x = gcontrol.LeftLegx;
+  Leftleg.rotation.z = gcontrol.LeftLegz;
+  Rightleg.rotation.x = gcontrol.RightLegx;
+  Rightleg.rotation.z = gcontrol.RightLegz;
+  head.rotation.x = gcontrol.Head;
+  body.position.x = gcontrol.Bodymovex;
+  body.position.z = gcontrol.Bodymovez;
+  body.position.y = gcontrol.Jump;
+  requestAnimationFrame(animate);
+  var t = clock.getElapsedTime() % period;
+  var s = t / period;
+  for (var i = 1; i < keys.length; i++) {
+    if (keys[i].s > s)
+      break;
+  }
+
+  i = i - 1;
+  var tt = (s - keys[i].s) / (keys[i + 1].s - keys[i].s);
+  var LeftArm_z = (1 - tt) * keys[i].pose.LeftArmz + tt * keys[i + 1].pose.LeftArmz;
+  var LeftArm_x = (1 - tt) * keys[i].pose.LeftArmx + tt * keys[i + 1].pose.LeftArmx;
+  var Leftlowarm_x = (1 - tt) * keys[i].pose.Leftlowarmx + tt * keys[i + 1].pose.Leftlowarmx;
+  var Leftlowarm_z = (1 - tt) * keys[i].pose.Leftlowarmz + tt * keys[i + 1].pose.Leftlowarmz;
+  var RightArm_z = (1 - tt) * keys[i].pose.RightArmz + tt * keys[i + 1].pose.RightArmz;
+  var RightArm_x = (1 - tt) * keys[i].pose.RightArmx + tt * keys[i + 1].pose.RightArmx;
+  var Rightlowarm_x = (1 - tt) * keys[i].pose.Rightlowarmx + tt * keys[i + 1].pose.Rightlowarmx;
+  var Rightlowarm_z = (1 - tt) * keys[i].pose.Rightlowarmz + tt * keys[i + 1].pose.Rightlowarmz;
+  var LeftLeg_x = (1 - tt) * keys[i].pose.LeftLegx + tt * keys[i + 1].pose.LeftLegx;
+  var LeftLeg_z = (1 - tt) * keys[i].pose.LeftLegz + tt * keys[i + 1].pose.LeftLegz;
+  var RightLeg_x = (1 - tt) * keys[i].pose.RightLegx + tt * keys[i + 1].pose.RightLegx;
+  var RightLeg_z = (1 - tt) * keys[i].pose.RightLegz + tt * keys[i + 1].pose.RightLegz;
+  var Headaction = (1 - tt) * keys[i].pose.Head + tt * keys[i + 1].pose.Head;
+  var Bodymove_x = (1 - tt) * keys[i].pose.Bodymovex + tt * keys[i + 1].pose.Bodymovex;
+  var Bodymove_z = (1 - tt) * keys[i].pose.Bodymovez + tt * keys[i + 1].pose.Bodymovez;
+  upperArm.rotation.z = LeftArm_z;
+  upperArm.rotation.x = LeftArm_x;
+  lowerArm.rotation.x = Leftlowarm_x;
+  lowerArm.rotation.z = Leftlowarm_z;
+  upperRightArm.rotation.x = RightArm_x;
+  upperRightArm.rotation.z = RightArm_z;
+  lowerRightArm.rotation.x = Rightlowarm_x;
+  lowerRightArm.rotation.z = Rightlowarm_z;
+  Leftleg.rotation.x = LeftLeg_x;
+  Leftleg.rotation.z = LeftLeg_z;
+  Rightleg.rotation.x = RightLeg_x;
+  Rightleg.rotation.z = RightLeg_z;
+  head.rotation.x = Headaction;
+  body.position.x = Bodymove_x;
+  body.position.z = Bodymove_z;
+  render();
+}
+
+function loadJSON() {
+  return {
+    "preset": "newaction2",
+    "remembered": {
+      "Default": {
+        "0": {
+          "LeftArmz": 0.01,
+          "LeftArmx": 0,
+          "Leftlowarmx": 0,
+          "Leftlowarmz": 0,
+          "RightArmz": 0.01,
+          "RightArmx": 0,
+          "Rightlowarmx": 0,
+          "Rightlowarmz": 0,
+          "LeftLegx": 0.01,
+          "LeftLegz": 0.01,
+          "RightLegx": 0.01,
+          "RightLegz": 0.01,
+          "Head": 0.01,
+          "Bodymovex": 0.01,
+          "Bodymovez": 0.01,
+          "Jump": 0.01
+        }
+      },
+      "action1": {
+        "0": {
+          "LeftArmz": -0.8497034647799393,
+          "LeftArmx": 0.8897721360940603,
+          "Leftlowarmx": 0.9090434571497942,
+          "Leftlowarmz": 0,
+          "RightArmz": 0.471464988034544,
+          "RightArmx": 0.42481011341171726,
+          "Rightlowarmx": 0.7231670308327269,
+          "Rightlowarmz": 0.062151007526099145,
+          "LeftLegx": 0.01,
+          "LeftLegz": -0.08272638990046105,
+          "RightLegx": 0.05116012901883277,
+          "RightLegz": 0.11922103145701113,
+          "Head": -0.25071966149897673,
+          "Bodymovex": 0,
+          "Bodymovez": 0,
+          "Jump": 0
+        }
+      },
+      "action2": {
+        "0": {
+          "LeftArmz": -0.9472479450629484,
+          "LeftArmx": 0.08665591509728543,
+          "Leftlowarmx": 0.03276887594076239,
+          "Leftlowarmz": 0.45232892865813557,
+          "RightArmz": 1.4469097908646351,
+          "RightArmx": 1.4815419831443157,
+          "Rightlowarmx": 1.0418123330905567,
+          "Rightlowarmz": -0.04623174834391097,
+          "LeftLegx": 0.005639371553428529,
+          "LeftLegz": -0.08272638990046105,
+          "RightLegx": 0.05116012901883277,
+          "RightLegz": 0.5,
+          "Head": -0.07730725210696054,
+          "Bodymovex": -58.81455276939616,
+          "Bodymovez": -17.629105538792317,
+          "Jump": 0
+        }
+      },
+      "action3": {
+        "0": {
+          "LeftArmz": -0.26443658308188467,
+          "LeftArmx": -0.08242118405993026,
+          "Leftlowarmx": 1.5463340616654537,
+          "Leftlowarmz": -0.11126140186591704,
+          "RightArmz": 0.032514826761003035,
+          "RightArmx": 1.4815419831443157,
+          "Rightlowarmx": 1.0418123330905567,
+          "Rightlowarmz": -0.04623174834391097,
+          "LeftLegx": 0.012142336905629159,
+          "LeftLegz": -0.5,
+          "RightLegx": -0.04638435126417634,
+          "RightLegz": 0.40643533451253794,
+          "Head": -0.07730725210696054,
+          "Bodymovex": -4.623174834391094,
+          "Bodymovez": -17.629105538792317,
+          "Jump": 0
+        }
+      },
+      "action4": {
+        "0": {
+          "LeftArmz": -1.5,
+          "LeftArmx": -0.040151909270626396,
+          "Leftlowarmx": -0.1,
+          "Leftlowarmz": -1,
+          "RightArmz": 0.6665539486005623,
+          "RightArmx": 0.04438664030798156,
+          "Rightlowarmx": -0.02033867443554256,
+          "Rightlowarmz": -0.6098220788679636,
+          "LeftLegx": 0.012142336905629159,
+          "LeftLegz": -0.5,
+          "RightLegx": 0.005639371553428529,
+          "RightLegz": 0,
+          "Head": 0.20448791315506576,
+          "Bodymovex": 59,
+          "Bodymovez": -17.629105538792317,
+          "Jump": 0
+        }
+      },
+      "newaction1": {
+        "0": {
+          "LeftArmz": 0,
+          "LeftArmx": 0,
+          "Leftlowarmx": 0,
+          "Leftlowarmz": 0,
+          "RightArmz": 0.01,
+          "RightArmx": 0,
+          "Rightlowarmx": 0,
+          "Rightlowarmz": 0,
+          "LeftLegx": 0.01,
+          "LeftLegz": 0,
+          "RightLegx": 0.01,
+          "RightLegz": 0.1,
+          "Head": 0.29119411785107385,
+          "Bodymovex": 0.01,
+          "Bodymovez": 0.01,
+          "Jump": 0.01
+        }
+      },
+      "newaction2": {
+        "0": {
+          "LeftArmz": 0,
+          "LeftArmx": 0,
+          "Leftlowarmx": 0,
+          "Leftlowarmz": 0,
+          "RightArmz": 0.01,
+          "RightArmx": 0,
+          "Rightlowarmx": 0,
+          "Rightlowarmz": 0,
+          "LeftLegx": 0.01,
+          "LeftLegz": 0,
+          "RightLegx": 0.01,
+          "RightLegz": 0.1,
+          "Head": -0.2290431103249747,
+          "Bodymovex": 0.01,
+          "Bodymovez": 0.01,
+          "Jump": 0.01
+        }
+      }
+    },
+    "closed": false,
+    "folders": {}
+  }
+}
+
+
+function onWindowResize() {
+  var width = window.innerWidth,
+    height = window.innerHeight;
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+  renderer.setSize(width, height);
+}
+
+
+function render() {
+  renderer.render(scene, camera);
+}
+
+
+
+
+
+</script>
+</body>
+</html>
