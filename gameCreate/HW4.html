@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+   #info {
+  position: absolute;
+  top: 0px;
+  width: 100%;
+  padding: 10px;
+  text-align: center;
+  color: #ffff00
+}
+
+body {
+  overflow: hidden;
+}
+
+
+    </style>
+</head>
+<body>
+<div id="info">demo page<br>
+身體沒辦法照著運動方式走只能黏在腳上</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/84/three.min.js"></script>
+<script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
+<script src="https://rawgit.com/mrdoob/three.js/dev/examples/js/Gyroscope.js"></script>
+<script src="https://jyunming-chen.github.io/game3js/js/ccdsys.js"></script>
+<script>
+   class MakeBody {
+  init(){
+  let bodylink = new THREE.Object3D();
+
+  let mat = new THREE.MeshNormalMaterial()
+  this.body = new THREE.Mesh(new THREE.BoxGeometry(35, 30, 50), mat)
+  this.body.position.set(-5, 10, -25)
+  this.body.add(new THREE.AxisHelper(10))
+  bodylink.add(body)
+  return bodylink;
+  }
+}
+
+class MakeLeg {
+  constructor() {
+    this.theta1 = 0
+    this.theta2 = 0;
+  }
+  init() {
+    let twoLink = new THREE.Object3D();
+    let mat = new THREE.MeshNormalMaterial();
+    this.link1 = new THREE.Object3D();
+    this.link1.add(new THREE.AxisHelper(10))
+    let mesh = new THREE.Mesh(new THREE.BoxGeometry(30, 3, 5), mat)
+    this.link1.add(mesh);
+    mesh.position.x = 15
+    mesh.position.y = 1
+    mesh.rotation.x = Math.PI / 2;
+
+    twoLink.add(this.link1)
+
+    this.link2 = new THREE.Object3D();
+    this.link2.add(new THREE.AxisHelper(20))
+    let mesh2 = new THREE.Mesh(new THREE.BoxGeometry(20, 3, 5), mat)
+    this.link2.add(mesh2);
+    mesh2.position.x = 10
+    mesh2.position.y = 1
+    this.link2.position.x = 30;
+    mesh2.rotation.x = Math.PI / 2;
+    this.link1.add(this.link2)
+    //this.link2.position.y = 10
+    
+
+    let paddle = new THREE.Mesh(new THREE.BoxGeometry(5, 11, 5), mat)
+    this.link2.add(paddle)
+    paddle.position.set(20, 1, -5)
+    paddle.rotation.x = Math.PI / 2;
+
+    return twoLink;
+  }
+  update(thetas) {
+    this.theta1 = thetas[0]
+    this.theta2 = thetas[1]
+    this.link1.rotation.y = this.theta1
+    this.link2.rotation.y = this.theta2
+  }
+}
+var camera, scene, renderer;
+
+var twoLinkLeg, twoLink;
+var twoLinkLeg2, twoLink2, body,head,lefthand,righthand;
+var link1, link2, puck2;
+
+var raycaster;
+var mouse = new THREE.Vector2();
+var pickables = [];
+
+var clock = new THREE.Clock();
+var Ts = 2;
+var paddlePos = new THREE.Vector3();
+var Ls = 5.3, //31
+  L2 = 30,
+  L1 = 20,
+  Fc = 1.0 * 5, // 6.0,
+  HR = 3.6,
+  Hh = 49.8,
+  Lh = 19.8,
+  Vf = Ls / Ts,
+  t = 0;
+/*var Ls = 5.3 * 5
+Fc = 1.0 * 5
+Ts = 2
+Vf = Ls / Ts
+t = 0*/
+/*
+身體沒辦法照著運動方式走只能黏在腳上
+*/
+init();
+animate();
+window.addEventListener('resize', onWindowResize, false);
+
+function fk(thetas, joints) { // all memory assumed in place
+  joints[0].set(0, 0, 0);
+
+  var localzero = new THREE.Vector3(0, 0, 0);
+  var m = new THREE.Matrix4();
+  m.makeRotationY(thetas[0]);
+  m.multiply(new THREE.Matrix4().makeTranslation(30, 0, 0));
+  localzero.applyMatrix4(m);
+  joints[1].copy(localzero);
+
+  localzero.set(0, 0, 0);
+  m.multiply(new THREE.Matrix4().makeRotationY(thetas[1]));
+  m.multiply(new THREE.Matrix4().makeTranslation(20, 0, 0));
+  localzero.applyMatrix4(m);
+  joints[2].copy(localzero);
+}
+
+function init() {
+  scene = new THREE.Scene();
+
+  camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 5000);
+  camera.position.z = 400;
+  camera.position.x = 400;
+
+  light = new THREE.PointLight(0xffffff);
+  light.position.set(100, 300, 200);
+  scene.add(light);
+
+  var gridXY = new THREE.GridHelper(100, 10, 'red', 'white');
+  gridXY.rotation.x = -Math.PI / 2;
+  //scene.add(gridXY);
+
+  var gridXZ = new THREE.GridHelper(1000, 10, 'red', 'black');
+  scene.add(gridXZ);
+
+  renderer = new THREE.WebGLRenderer();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setClearColor(0x888888);
+
+  controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+  document.body.appendChild(renderer.domElement);
+  twoLinkLeg = new MakeLeg(); // global 
+  twoLink = twoLinkLeg.init();
+  scene.add(twoLink);
+  twoLink.rotation.x = Math.PI / 2
+  twoLink.position.set(0, 50, 10)
+
+  twoLinkLeg2 = new MakeLeg(); // global 
+  twoLink2 = twoLinkLeg2.init();
+  scene.add(twoLink2);
+  twoLink2.position.set(0, 50, -10)
+  twoLink2.rotation.x = Math.PI / 2
+
+  let mat = new THREE.MeshNormalMaterial()
+  //body1 = new MakeBody()
+  body = new THREE.Object3D();
+  bodylink = new THREE.Mesh(new THREE.BoxGeometry(35, 30, 50), mat)
+  bodylink.position.set(-5, 10, -25)
+  bodylink.add(new THREE.AxisHelper(10))
+  twoLink2.add(bodylink);
+  
+  head = new THREE.Mesh (new THREE.SphereGeometry (25), new THREE.MeshBasicMaterial({color:'yellow'}))
+  head.position.set(-5, 10, -70)
+  twoLink2.add(head);
+  
+  lefthand = new THREE.Mesh(new THREE.BoxGeometry(5, 40, 5), mat)
+  lefthand.position.set(10, 30, -30)
+  lefthand.rotation.x = -Math.PI / 2
+  lefthand.rotation.z = -Math.PI / 2
+  twoLink2.add(lefthand)
+  
+  righthand = new THREE.Mesh(new THREE.BoxGeometry(5, 40, 5), mat)
+  righthand.position.set(10, -10, -30)
+  righthand.rotation.x = -Math.PI / 2
+  righthand.rotation.z = -Math.PI / 2
+  twoLink2.add(righthand)
+  
+  //////////////////////////////////////
+  twoLinkLeg.ccdSys = new CCDSys(fk)
+  twoLinkLeg.ccdSys.setCCDAxis(new THREE.Vector3(0, 1, 0), 0, Math.PI / -2, Math.PI / 2)
+  twoLinkLeg.ccdSys.setCCDAxis(new THREE.Vector3(0, 1, 0), 1, -Math.PI, 0)
+
+  twoLinkLeg.target = new THREE.Vector3();
+
+  twoLinkLeg2.ccdSys = new CCDSys(fk)
+  twoLinkLeg2.ccdSys.setCCDAxis(new THREE.Vector3(0, 1, 0), 0, Math.PI / -2, Math.PI / 2)
+  twoLinkLeg2.ccdSys.setCCDAxis(new THREE.Vector3(0, 1, 0), 1, -Math.PI, 0)
+
+  twoLinkLeg2.target = new THREE.Vector3();
+
+  bodylink.ccdSys = new CCDSys(fk)
+  bodylink.ccdSys.setCCDAxis(new THREE.Vector3(0, 1, 0), 0)
+  bodylink.ccdSys.setCCDAxis(new THREE.Vector3(0, 1, 0), 1)
+  bodylink.target = new THREE.Vector3();
+  //theta1 = theta2 = 0
+  ///////////////////////////////////////////
+  let plane = new THREE.Mesh(new THREE.PlaneGeometry(100, 100), new THREE.MeshBasicMaterial({
+    transparent: true,
+    opacity: 0.5,
+    visible: true
+  }));
+  //scene.add(plane);
+  plane.rotation.z = -Math.PI / 2;
+  pickables = [plane];
+
+  puck = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, 2, 20), new THREE.MeshNormalMaterial());
+  //scene.add(puck);
+  puck.position.z = 10;
+  puck.rotation.x = Math.PI / 2
+  puck2 = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, 2, 20), new THREE.MeshNormalMaterial());
+  //scene.add(puck2);
+  puck2.rotation.x = Math.PI / 2
+  puck2.position.z = -10;
+  bodypuck = new THREE.Mesh(new THREE.CylinderGeometry(6, 6, 2, 20), new THREE.MeshNormalMaterial());
+ //scene.add(bodypuck);
+  bodypuck.rotation.x = Math.PI / 2
+
+  raycaster = new THREE.Raycaster();
+  gyro = new THREE.Gyroscope();
+  twoLink.add(gyro)
+  gyro.add(camera)
+  //document.addEventListener('mousemove', onDocumentMouseDown, false);
+}
+
+/*function onDocumentMouseDown(event) {
+
+  event.preventDefault();
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+  // find intersections
+  raycaster.setFromCamera(mouse, camera);
+  var intersects = raycaster.intersectObjects(pickables);
+  if (intersects.length > 0) {
+    puck.position.copy(intersects[0].point);
+    puck2.position.copy(intersects[0].point);
+    bodypuck.position.copy(intersects[0].point);
+    twoLinkLeg.target.copy(twoLink.worldToLocal(puck.position.clone()))
+    twoLinkLeg2.target.copy(twoLink.worldToLocal(puck2.position.clone()))
+  }
+
+}*/
+
+function animate() {
+  requestAnimationFrame(animate);
+  render();
+}
+
+function render() {
+  update();
+  renderer.render(scene, camera);
+}
+
+function update() {
+  dt = 0.01;
+  t += dt;
+  //let t = clock.getElapsedTime();//- Ts;
+  var n = Math.floor(t / Ts);
+  var tt = t % Ts
+  console.log(tt / Ts);
+  let footmovex = 2 * Ls * dt //tt/Ts  //Ts = 0.5每跨一步的時間
+  let footmovey = Fc / 2 - Fc / 2 * Math.cos(2 * Math.PI * tt / Ts);
+  //console.log(2*Ls*t/1);
+  //console.log(footmovex)
+  let bodymovex = Ls / 2 * dt + Ls * dt //t / Ts
+  let bodymovey = Hh - HR * Math.cos(2 * Math.PI * t / Ts)
+  //////////////////////////////////////////
+  /*Ls = 31cm //身體
+ 		L2 = 30cm //大腿 	
+ 		L1 = 20cm //小腿
+    Fc = 1.0
+    HR = 0.6
+    Hh = 8.3
+    Lh = 3.3
+    腳軌跡 = (2*Ls*t/Ts , Fc/2 - Fc/2*Math.cos(2*Math.PI*t/Ts))
+    Hip軌跡 = (Ls/2+Ls*t/Ts , Hh - HR *cos(2*PI*t/Ts))
+  */
+  /////////////////////////////////////////////
+
+  if (n % 2 === 1) {
+  	lefthand.rotation.z -= 0.005;
+  righthand.rotation.z += 0.005;
+    x1 = footmovex
+    y1 = footmovey
+    x2 = 0
+    y2 = 0
+    b = bodymovex
+  } else {
+  
+  lefthand.rotation.z += 0.005;
+    righthand.rotation.z -= 0.005;
+    x1 = 0
+    y1 = 0
+    x2 = footmovex;
+    y2 = footmovey;
+    b = 0;
+  }
+  //console.log(x1)
+  //console.log(x2)
+  puck.position.x += x1;
+  puck.position.y = y1;
+  //console.log(puck.position.x);
+  puck2.position.x += x2;
+  puck2.position.y = y2;
+  
+  twoLink.position.x += x1;
+  //twoLink.position.y = y1;
+  //console.log(twoLink.position.x);
+  twoLink2.position.x += x2;
+  //twoLink2.position.y = y2;
+
+  bodypuck.position.x += b;
+  bodypuck.position.y = bodymovey;
+  //body.position.y = bodymovey;
+  twoLinkLeg.target.copy(twoLink.worldToLocal(puck.position.clone()));
+  twoLinkLeg2.target.copy(twoLink2.worldToLocal(puck2.position.clone()));
+  //body.target.copy(body.worldToLocal(bodypuck.position.clone()));
+
+
+  var thetas = [twoLinkLeg.theta1, twoLinkLeg.theta2];
+  twoLinkLeg.ccdSys.solve(twoLinkLeg.target, thetas);
+  twoLinkLeg.update(thetas)
+  var thetas2 = [twoLinkLeg2.theta1, twoLinkLeg2.theta2];
+  twoLinkLeg2.ccdSys.solve(twoLinkLeg2.target, thetas2);
+  twoLinkLeg2.update(thetas2)
+
+}
+
+function onWindowResize() {
+  var width = window.innerWidth;
+  var height = window.innerHeight;
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+  renderer.setSize(width, height);
+}
+
+
+
+
+</script>
+</body>
+</html>
