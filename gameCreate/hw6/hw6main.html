@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+<link rel="stylesheet" type="text/css" href="mystyle.css">
+</head>
+
+<body> 
+<div id="info">Agent (Seek, Arrival, Collision)<br>The time has passed... <span id="time">0 min 0 sec</span>
+<p id="message"></p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/84/three.min.js"></script>
+<script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
+<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+
+<script src="./agent.js"></script>
+<script src="./obstacle.js"></script>
+<script src="./target.js"></script>
+
+<!-- must be before main.js -->
+<script src="./scene.js"></script>
+<script src="./threemain.js"></script>
+
+
+<script src="./main.js"></script>
+<script>
+    function startTimer(display) {
+        var minutes, seconds;
+        return setInterval(function () {
+            timer += 0.1;
+            minutes = parseInt(timer / 600, 10)
+            seconds = parseInt(timer % 600, 10);
+            display.textContent = minutes + " min " + seconds + " sec ";
+        }, 100);
+    }
+    window.onload = function () {
+        display = document.querySelector('#time');
+        countUp = startTimer(display);
+    };
+</script>
+</body>
+
+</html>
