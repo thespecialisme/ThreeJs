@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+	<style>
+    * {
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+}
+
+.christmasTree {
+  position: absolute;
+  top: 0;
+  left: 30vw;
+}
+
+#gift {
+  position: absolute;
+  top: 80vh;
+  left: 55vw;
+  height: 20vh;
+  z-index: -1;
+}
+
+#gift1 {
+  position: absolute;
+  top: 80vh;
+  left: 25vw;
+  height: 20vh;
+  z-index: -1;
+}
+
+#switch {
+  position: absolute;
+  left: 47vw;
+  z-index: 1;
+}
+
+.santa {
+  position: absolute;
+  left: 75vw;
+  top: 70vh;
+}
+
+.santaImg {
+  z-index: 1;
+  width: 25vw;
+  height: 30vh;
+}
+
+.tree {
+  height: 100vh;
+  width: 50vw;
+  z-index: -1;
+}
+
+</style>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Hw1</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+    <script src="https://code.jquery.com/jquery-2.1.4.min.js">
+
+
+</script>
+<div>
+  <button id="switch">Close Light</button>
+</div>
+
+<div id="santa" class="santa">
+  <img class="santaImg" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTexEsBn67wZOs5hWei0X69xy6LNQlZkJHldC3B8pe3k1tXXwbVLQ">
+</div>
+<div class="christmasTree" id="christmasTree">
+  <img src="https://i.imgur.com/omX5Drl.png" class="tree">
+</div>
+<div>
+  <img id="gift" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcToW687PPTWTu87mVM5VkUMu3rdGZFNhxIztkiCNa6McmI04lEq">
+  <img id="gift1" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTaQ3o4YcieatN-hqYCzC0drrNHxCH_Pr2x4WVi-kacbHbuXkyg">
+</div>
+<script>
+class Light {
+  constructor(x, y) {
+    this.element = document.createElement('div');
+    this.element.id = 'light';
+    this.element.style.cssText = "position:absolute;width:20px;height:20px;border-radius:15px;z-index:1";
+    this.element.style.top = x + 'vh';
+    this.element.style.left = y + 'vw';
+    this.element.style.backgroundColor = "hsl(89, 43%, 51%)";
+    document.getElementsByTagName('body')[0].appendChild(this.element);
+  }
+  changeColor() {
+    var self = this;
+    var hue = Math.random() * 200;
+    self.element.style.background = "hsl(" + hue + ", 43%, 51%)";
+    this.time = setTimeout(function() {
+      self.changeColor()
+    }, Math.random() * 1000 + 1000);
+  }
+}
+var lights = [];
+var open = true;
+$('#switch').click(function() {
+  if (open) {
+    lights.forEach((e) => {
+      e.element.style.background = "hsl(89,0%,50%)";
+      clearTimeout(e.time);
+    });
+    $('#switch').text('Close Light');
+  } else {
+    lights.forEach((e) => {
+      e.time = setTimeout(function() {
+        e.changeColor();
+      }, Math.random() * 1000 + 1000);
+    });
+    $('#switch').text('Open Light')
+  }
+  open = !open;
+})
+
+document.getElementsByTagName('body')[0].cssText = "background-image: url('')"
+
+l0 = new Light(10, 50);
+l0.changeColor();
+l1 = new Light(10, 55);
+l1.changeColor();
+l2 = new Light(20, 60);
+l2.changeColor();
+l3 = new Light(15, 54);
+l3.changeColor();
+l4 = new Light(25, 53);
+l4.changeColor();
+l5 = new Light(35, 50);
+l5.changeColor();
+l6 = new Light(40, 53);
+l6.changeColor();
+l7 = new Light(45, 54);
+l7.changeColor();
+l8 = new Light(46, 60);
+l8.changeColor();
+l9 = new Light(47, 44);
+l9.changeColor();
+l10 = new Light(50, 40);
+l10.changeColor();
+l11 = new Light(53, 45);
+l11.changeColor();
+l12 = new Light(55, 50);
+l12.changeColor();
+l13 = new Light(60, 55);
+l13.changeColor();
+l14 = new Light(66, 60);
+l14.changeColor();
+l15 = new Light(60, 70);
+l15.changeColor();
+l16 = new Light(60, 65);
+l16.changeColor();
+
+
+lights.push(l0);
+lights.push(l1);
+lights.push(l2);
+lights.push(l3);
+lights.push(l4);
+lights.push(l5);
+lights.push(l6);
+lights.push(l7);
+lights.push(l8);
+lights.push(l9);
+lights.push(l10);
+lights.push(l11);
+lights.push(l12);
+lights.push(l13);
+lights.push(l14);
+lights.push(l15);
+lights.push(l16);
+
+
+</script>
+
+
+</body>
+</html>
