@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Graphic HW1</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/107/three.min.js"></script>
+<script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+    <script>
+        var renderer, scene, camera;
+var controls,angle,triangle, loader;
+var clock,speed = 10;
+class buildTriangle {
+  constructor() {
+    let texture = loader.load("https://i.imgur.com/DrvlmNW.jpg");
+    var geometry = new THREE.Geometry();
+    geometry.vertices.push(
+      new THREE.Vector3(10, 0, 0),
+      new THREE.Vector3(0, 0, 5),
+      new THREE.Vector3(0, 0, -5),
+      new THREE.Vector3(0, 5, 0)
+    );
+
+    var face;
+    face = new THREE.Face3(0, 3, 1);
+    geometry.faces.push(face);
+    face = new THREE.Face3(0, 2, 3);
+    geometry.faces.push(face);
+    face = new THREE.Face3(0, 1, 2);
+    geometry.faces.push(face);
+    face = new THREE.Face3(1, 3, 2);
+    geometry.faces.push(face);
+
+    geometry.faceVertexUvs[0].push([new THREE.Vector2(1, 0.5), new THREE.Vector2(0.25, 0.5), new THREE.Vector2(0.25, 0.25)]);
+    geometry.faceVertexUvs[0].push([new THREE.Vector2(1, 0.5), new THREE.Vector2(0.25, 0.75), new THREE.Vector2(0.25, 0.5)]);
+    geometry.faceVertexUvs[0].push([new THREE.Vector2(1, 0.5), new THREE.Vector2(0.25, 0.25), new THREE.Vector2(0.25, 0.5)]);
+    geometry.faceVertexUvs[0].push([new THREE.Vector2(0.25, 0.25), new THREE.Vector2(0, 0.5), new THREE.Vector2(0.25, 0.75)]);
+
+    geometry.computeBoundingSphere();
+    geometry.computeFaceNormals();
+    geometry.computeVertexNormals();
+
+    this.body = new THREE.Mesh(geometry, new THREE.MeshPhongMaterial({
+      map: texture
+    }));
+    this.body.traverse(
+      function(body) {
+        if (body instanceof THREE.Mesh) {
+          body.castShadow = true
+        }
+      }
+    );
+    this.speed = 0.1;
+    this.angle = 0.0;
+    this.body.position.x = -70;
+    this.body.rotation.y = Math.PI;
+    return this.body;
+    
+
+  }
+}
+
+
+init();
+animate();
+
+function init () {
+	angle = 0;
+	
+	renderer = new THREE.WebGLRenderer();
+	document.body.appendChild (renderer.domElement);
+	var width = window.innerWidth;
+	var height = window.innerHeight;
+	
+	renderer.setSize (width, height);
+	renderer.setClearColor (0x888888);
+	
+  
+  clock = new THREE.Clock();
+	scene = new THREE.Scene();
+	var grid = new THREE.GridHelper(200,20, 'red', 'white');
+	scene.add (grid);
+	var axes = new THREE.AxesHelper (5);
+	scene.add (axes);
+	
+	camera = new THREE.PerspectiveCamera (35, width/height, 1, 3000);
+	camera.position.y = 160;
+	camera.position.z = 400;
+	camera.lookAt (new THREE.Vector3(0,0,0));
+	
+	controls = new THREE.OrbitControls(camera, renderer.domElement);
+	loader = new THREE.TextureLoader();
+	triangle =  loader.crossOrigin = '';
+  triangle = new buildTriangle();
+  scene.add(triangle);
+  ///////////////無法移動位子//////////////
+  
+  
+  ///////////floor////////////
+  var texture = loader.load('https://i.imgur.com/bv24XBd.jpg?1');
+		  /*texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+		  texture.repeat.set(7, 7);*/
+ var floor = new THREE.Mesh(new THREE.PlaneGeometry(20, 30),
+			new THREE.MeshPhongMaterial());
+		  floor.rotation.x = -Math.PI / 2;
+      floor.position.y = 10;
+ 
+ 	scene.add(floor);
+  
+  var leftfloor1 = new THREE.Mesh(new THREE.PlaneGeometry(25, 30),
+			new THREE.MeshPhongMaterial());
+		  leftfloor1.rotation.x = -Math.PI / 2;
+      leftfloor1.rotation.y = -Math.PI *1/8;
+      leftfloor1.position.y = 5;
+      leftfloor1.position.x = -20;
+      scene.add(leftfloor1);
+      
+   var leftfloor2 = new THREE.Mesh(new THREE.PlaneGeometry(20, 30),
+			new THREE.MeshPhongMaterial());
+		  leftfloor2.rotation.x = -Math.PI / 2;
+      leftfloor2.position.x = -40;
+      scene.add(leftfloor2);
+      
+    var rightfloor1 = new THREE.Mesh(new THREE.PlaneGeometry(15, 30),
+			new THREE.MeshPhongMaterial());
+		  rightfloor1.rotation.x = -Math.PI / 2;
+      rightfloor1.rotation.y = Math.PI*1/4;
+       rightfloor1.position.x = 15;
+        rightfloor1.position.y= 5
+      scene.add(rightfloor1); 
+      
+    var rightfloor2 = new THREE.Mesh(new THREE.PlaneGeometry(20, 30),
+			new THREE.MeshPhongMaterial());
+		  rightfloor2.rotation.x = -Math.PI / 2;
+      rightfloor2.position.x = 30;
+      scene.add(rightfloor2);   
+  ////////////////light////////////////
+  var light = new THREE.PointLight(0xffffff, 1);
+  light.position.set(50, 50, 50);
+  scene.add(light);
+  var amblight = new THREE.AmbientLight(0x777777); 
+  scene.add(amblight);
+  
+  
+	window.addEventListener('resize', onWindowResize, false);
+}
+
+function onWindowResize() {
+	var width = window.innerWidth;
+  var height = window.innerHeight;
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+  renderer.setSize(width, height);
+	
+}
+
+function animate() {
+	let dt = clock.getDelta();
+  let val = new THREE.Vector3(-1,0,0).multiplyScalar(speed * dt);
+  //triangle.speed = 10;
+   triangle.position.add(val);
+   if(triangle.position.x <= 20 && triangle.position.x > 10){
+        triangle.position.y = -1 * triangle.position.x + 20 ;
+        triangle.rotation.z = -Math.atan2(-10,10) * (speed > 0 ? 1 : -1);//atan2(y,x)
+    }
+    else if(triangle.position.x <= -10 && triangle.position.x >= -30){
+        triangle.position.y = 0.5 * triangle.position.x + 15;
+        triangle.rotation.z = Math.atan2(-10,20) * (speed > 0 ? 1 : -1);
+    }
+    else if(triangle.position.x < -50 || triangle.position.x > 40){
+        if(triangle.position.x < -50)
+            triangle.position.x = -50;
+        else
+            triangle.position.x = 40;
+        speed *= -1;
+        triangle.rotation.y += Math.PI;
+    }
+    else triangle.rotation.z = 0;
+	requestAnimationFrame(animate);
+	render();
+}
+
+function render() {
+	renderer.render(scene, camera);
+}
+
+    </script>
+</body>
+</html>
