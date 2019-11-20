@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <div id="info">HW4</div>
 <script src="https://threejs.org/build/three.min.js"></script>
-<script src="https://threejs.org/examples/js/controls/OrbitControls.js">
-<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+	<script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
+	<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/stats.js/r16/Stats.min.js"></script>
+	<script src="https://rawgit.com/jyunming-chen/tutsplus/master/js/KeyboardState.js"></script>
 	<!--script src="https://rawgit.com/mrdoob/three.js/master/examples/js/loaders/DDSLoader.js"></script-->
 	<script src="https://raw.githack.com/mrdoob/three.js/dev/examples/js/loaders/MTLLoader.js"></script>
 	<script src="https://raw.githack.com/mrdoob/three.js/dev/examples/js/loaders/OBJLoader.js"></script>
@@ -19,13 +21,10 @@ var pickables = [];
 var pickables2 = [];
 var raycaster = new THREE.Raycaster();
 var mouse = new THREE.Vector2();
-var light;
-var roundcore,lampcore;
+var light,chair;
+var roundcore,lampcore,lamplight;
 var lit = false;
 var lit2 = false;
-var theObject;
-var modelName;
-var theModel;
 init();
 animate();
 
@@ -47,19 +46,37 @@ function init() {
   var gridXZ = new THREE.GridHelper(200, 20, 'red', 'white');
   scene.add(gridXZ);
 
-var light = new THREE.PointLight( 0xffffff, 1);
-light.position.set( 50, 50, 50 );
+light = new THREE.SpotLight( 0xffffff, 1);
+light.position.set( -150, 100, 50 );
 scene.add( light );
 
+/*var pointLight = new THREE.PointLight( 0xff0000, 1, 100 );
+pointLight.position.set( 10, 10, 10 );
+scene.add( pointLight );*/
+lamplight = new THREE.PointLight( 0xffffff, 1);
+lamplight.position.set(20,50,10);
+scene.add( lamplight );
+var sphereSize = 1;
+var pointLightHelper = new THREE.PointLightHelper( lamplight, sphereSize );
 
-//let lampmodel = readModel('lamp');
-//lampmodel.position.x = 20;
 
-//scene.add (lampmodel);
+scene.add(pointLightHelper);
 
-let chair = readModel('chair');
-scene.add (chair); 
+/*var pointLight = new THREE.PointLight( 0xff0000, 1, 100 );
+pointLight.position.set( 10, 10, 10 );
+scene.add( pointLight );
 
+var sphereSize = 1;
+var pointLightHelper = new THREE.PointLightHelper( pointLight, sphereSize );
+scene.add( pointLightHelper );*/
+
+let lamp = readModel2('lamp');
+//lamp.position.x = 20;
+//scene.add (lamp);
+
+chair = readModel('WoodChair');
+//chair.position.x = 10;
+//chair.rotation.z = Math.PI/2;
 
 //////控制器///////////////////////////
   
@@ -74,12 +91,22 @@ scene.add (chair);
   ////////////////////////////////////////
   //////////桌子//////////
   let table = buildTable();
+  
   scene.add(table);
- 	let tea = buildTea();
+  
+ let tea = buildTea();
+	
   tea.position.y = 20;
   tea.position.x = 18;
   tea.position.z = -10;
   scene.add(tea);
+  tea.traverse(
+	function(tea) {
+		if (tea instanceof THREE.Mesh) {
+			tea.castShadow = true
+		}
+	}
+   );
 }
 
 
@@ -110,11 +137,11 @@ function onDocumentMouseDown(event) {
     if (lit2) {
       //lampcore.material.emissive = new THREE.Color('green');
       roundcore.material.emissive = new THREE.Color('green');
-      //light.intensity = 1;
+      lamplight.intensity = 1;
     } else {
       //lampcore.material.emissive = new THREE.Color('red');
       roundcore.material.emissive = new THREE.Color('red');
-      //light.intensity = 0;
+      lamplight.intensity = 0;
     }
   } else {
     console.log('no hit')
@@ -131,6 +158,7 @@ function buildTable() {
    });
   let table = new THREE.Group();
 	let top = new THREE.Mesh(new THREE.BoxGeometry(60, 3, 40), mat);
+	
 	let down1 = new THREE.Mesh(new THREE.BoxGeometry(3, 20, 3), mat);
   let down2 = new THREE.Mesh(new THREE.BoxGeometry(3, 20, 3), mat);
   let down3 = new THREE.Mesh(new THREE.BoxGeometry(3, 20, 3), mat);
@@ -232,13 +260,14 @@ function buildTea(){
 
 	let loader = new THREE.TextureLoader();
   loader.crossOrigin = '';
-  let texture = loader.load ('https://a.1stdibscdn.com/archivesE/upload/1121189/f_135189921551284753656/13518992_master.jpeg?width=768');
+  let texture = loader.load ('https://encrypted-tbn0.gstatic.com/images?q=tbn%3AANd9GcQ9--ceDIFLHc8rQ3hzuYcFEOE6-OJSkPOHkX3Lkerp62Qyh6aF');
   let mat = new THREE.MeshPhongMaterial({
     map: texture
    });
   let tea = new THREE.Group();
   let body = new THREE.Mesh(new THREE.BoxGeometry(5, 10, 5), mat);
   
+  var alpha = loader.load('https://i.imgur.com/bv24XBd.jpg?1');
   var topGeometry = new THREE.Geometry();
   topGeometry.vertices.push(
   	new THREE.Vector3(2.5, 0, 0), //0
@@ -265,7 +294,7 @@ function buildTea(){
   topGeometry.faces.push(face);
   
   
-  let top = new THREE.Mesh(topGeometry,new THREE.MeshBasicMaterial());
+  let top = new THREE.Mesh(topGeometry,new THREE.MeshPhongMaterial({map: texture}));
   body.position.y = 5;
   body.position.z = -2.5;
   top.position.y = 10;
@@ -276,7 +305,7 @@ function buildTea(){
 
 
 }
-function readModel (modelName, targetSize=60) {
+function readModel (modelName, targetSize=40) {
   var onProgress = function(xhr) {
     if (xhr.lengthComputable) {
       var percentComplete = xhr.loaded / xhr.total * 100;
@@ -290,41 +319,111 @@ function readModel (modelName, targetSize=60) {
     materials.preload();
     var objLoader = new THREE.OBJLoader();
     objLoader.setMaterials(materials);
-    objLoader.setPath('D:\ThreeJs\Graphics\models/');
+    objLoader.setPath('models/');
     objLoader.load(modelName+'.obj', function(object) {
+		
 		let theObject =  unitize (object, targetSize);
 		//theObject.add ( new THREE.BoxHelper (theObject) )
 		theObject.name = 'OBJ'
 		scene.add (theObject);
-		theObject.position.set(0,30,0);
-	    theObject.setRotationFromEuler (new THREE.Euler (-3.1416/2, 0,0, 'ZYX'))
+		
+		
+		theObject.setRotationFromEuler (new THREE.Euler (3.1416/2, 0, -3.1416/2, 'ZYX'))
+    }, onProgress, onError);
+  });
+}
+
+function readModel2 (modelName, targetSize=40) {
+  var onProgress = function(xhr) {
+    if (xhr.lengthComputable) {
+      var percentComplete = xhr.loaded / xhr.total * 100;
+      console.log(Math.round(percentComplete, 2) + '% downloaded');
+    }
+  };
+  var onError = function(xhr) {};
+  var mtlLoader = new THREE.MTLLoader();
+  mtlLoader.setPath('models/');
+  mtlLoader.load(modelName+'.mtl', function(materials) {
+    materials.preload();
+    var objLoader = new THREE.OBJLoader();
+    objLoader.setMaterials(materials);
+    objLoader.setPath('models/');
+    objLoader.load(modelName+'.obj', function(object) {
+		
+		let theObject =  unitize2 (object, targetSize);
+		//theObject.add ( new THREE.BoxHelper (theObject) )
+		theObject.name = 'OBJ'
+		
+		scene.add (theObject);
+		
+		
+		theObject.setRotationFromEuler (new THREE.Euler (3.1416/2, 0, -3.1416/2, 'ZYX'))
     }, onProgress, onError);
   });
 }
 function unitize (object, targetSize) {  
-	
-	// find bounding box of 'object'
 	var box3 = new THREE.Box3();
 	box3.setFromObject (object);
 	var size = new THREE.Vector3();
 	size.subVectors (box3.max, box3.min);
 	var center = new THREE.Vector3();
 	center.addVectors(box3.max, box3.min).multiplyScalar (0.5);
-	
 	console.log ('center: ' + center.x + ', '+center.y + ', '+center.z );
 	console.log ('size: ' + size.x + ', ' +  size.y + ', '+size.z );
-	
-	// uniform scaling according to objSize
 	var objSize = Math.max (size.x, size.y, size.z);
 	var scaleSet = targetSize/objSize;
 				
 	var theObject =  new THREE.Object3D();
 	theObject.add (object);
+	theObject.traverse(
+            function(theObject) {
+                if (theObject instanceof THREE.Mesh) {
+                    theObject.castShadow = true
+                }
+            }
+        );
+		
 	object.scale.set (scaleSet, scaleSet, scaleSet);
-	object.position.set (-center.x*scaleSet, -center.y*scaleSet, -center.z*scaleSet);
+	//object.position.set (-center.x*scaleSet, -center.y*scaleSet, -center.z*scaleSet);
+	object.rotation.y = -Math.PI/2;
+	object.rotation.x = -Math.PI/2;
+	object.position.set(0,35,0);
 	
-	return theObject;
-			
+	
+	return theObject;		
+}
+
+function unitize2 (object, targetSize) {  
+	var box3 = new THREE.Box3();
+	box3.setFromObject (object);
+	var size = new THREE.Vector3();
+	size.subVectors (box3.max, box3.min);
+	var center = new THREE.Vector3();
+	center.addVectors(box3.max, box3.min).multiplyScalar (0.5);
+	console.log ('center: ' + center.x + ', '+center.y + ', '+center.z );
+	console.log ('size: ' + size.x + ', ' +  size.y + ', '+size.z );
+	var objSize = Math.max (size.x, size.y, size.z);
+	var scaleSet = targetSize/objSize;
+				
+	var theObject =  new THREE.Object3D();
+	theObject.traverse(
+            function(theObject) {
+                if (theObject instanceof THREE.Mesh) {
+                    theObject.castShadow = true
+                }
+            }
+        );
+	theObject.add (object);
+	
+		
+	object.scale.set (scaleSet, scaleSet, scaleSet);
+	//object.position.set (-center.x*scaleSet, -center.y*scaleSet, -center.z*scaleSet);
+	//object.rotation.y = -Math.PI/2;
+	object.rotation.z = Math.PI/2;
+	object.position.set(-37,5,-20);
+	
+	
+	return theObject;		
 }
 function buildSwitch(){
 	myswitch = new THREE.Group();
@@ -367,6 +466,7 @@ function render() {
   renderer.render(scene, camera);
 
 }
+
 
 
     </script>
