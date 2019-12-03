@@ -40,7 +40,7 @@ body {
 <script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
 <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
 <script src="https://raw.githack.com/mrdoob/three.js/dev/examples/js/geometries/TeapotBufferGeometry.js"></script>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/stats.js/r16/Stats.min.js"></script>
 <script id="myVertexShader" type="x-shader/x-vertex">
   uniform int shading;
   uniform int coordinate;
@@ -118,7 +118,7 @@ body {
       varying vec3 eyelightdir;
       varying vec3 eyenormal;
       varying vec4 eyepos;
-	  
+	  uniform float opacity;
       void main() {
           float intensity = dot (normalize (eyenormal), normalize (eyelightdir));
           vec3 diffuse = intensity*vec3 (1,1,1);
@@ -143,11 +143,15 @@ $('#coords').change( function() {
 });
 
 
-var scene, renderer, camera;
+var scene, renderer, camera,raycaster;
 var movingTeapot,pointTeapot;
 var angle = 0;
 var teapotMaterial,pointteapotMaterial;
-
+var mouse = new THREE.Vector2();
+var pickables = [];
+//var pointTeapotpick = [];
+window.addEventListener('resize',onWindowResize,false);
+document.addEventListener('mousedown',onDocumentMouseDown,false);
 
 init();
 animate();
@@ -155,6 +159,8 @@ animate();
 function init() {
   var width = window.innerWidth;
   var height = window.innerHeight;
+
+  raycaster = new THREE.Raycaster();
 
   renderer = new THREE.WebGLRenderer({
     antialias: true
@@ -168,12 +174,13 @@ function init() {
   camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 10000);
   camera.position.z = 200;
   camera.lookAt(new THREE.Vector3(0, 0, 0));
-
+  scene.add(camera);
   controls = new THREE.OrbitControls(camera, renderer.domElement);
 
   var gridXZ = new THREE.GridHelper(200, 20, 'red', 'white');
   scene.add(gridXZ);
-
+  pickables = [gridXZ];
+  
   pointLight = new THREE.PointLight(0xffffff);
   pointLight.position.set(200, 300, 200);
   scene.add(pointLight);
@@ -198,24 +205,44 @@ function init() {
   pointteapotMaterial = new THREE.ShaderMaterial({
    uniforms:{
 		lightpos: {type:'v3', value: new THREE.Vector3(0, 30, 20) },
+		opacity: {type: 'f', value: 1.0}
 	},
 	    vertexShader: document.getElementById('myVertexShader2').textContent,
 		fragmentShader: document.getElementById('myFragmentShader2').textContent
 	});
 	
 	
-	
+	pointteapotMaterial.transparent = true;
 	
 	
 	
   movingTeapot = new THREE.Mesh (new THREE.TeapotBufferGeometry(10), teapotMaterial);
   pointTeapot = new THREE.Mesh (new THREE.TeapotBufferGeometry(10), pointteapotMaterial);
   
-  
+ 
   scene.add (movingTeapot);
   scene.add (pointTeapot);
   
-  pointTeapot.position.set(0,0,0);
+  pointTeapot.position.set(0,10,0);
+}
+
+function onDocumentMouseDown(event){
+  event.preventDefault();
+  mouse.x=(event.clientX/window.innerWidth)*2-1;
+  mouse.y=-(event.clientY/window.innerHeight)*2+1;
+  
+  raycaster.setFromCamera(mouse,camera);
+  var intersects = raycaster.intersectObjects(pickables,true);
+	if(intersects.length > 0){
+	  pointTeapot.rotation.y = angle+Math.PI / 2;
+  }
+}
+function onWindowResize(){
+	var width = window.innerWidth;
+  var height = window.innerHeight;
+  camera.aspect=width/height;
+  camera.updateProjectionMatrix();
+  renderer.setSize(width,height);
 }
 
 function animate() {
@@ -223,15 +250,29 @@ function animate() {
 
   // update the uniform variable
   if (pointTeapot !== undefined) {
-    pointteapotMaterial.uniforms.lightpos.value.copy(pointLight.position);
+    pointteapotMaterial.uniforms.lightpos.value.copy (pointLight.position);
+	pointteapotMaterial.uniforms.opacity.value = Math.abs(Math.sin (angle)); 
+		
+    // pointTeapot.rotation.y = -(-1.5+angle + Math.PI / 2);
   }
   if (movingTeapot !== undefined) {
-	movingTeapot.position.set (70*Math.cos(angle), 0, 70*Math.sin(angle));
+	movingTeapot.position.set (70*Math.cos(angle), 10, 70*Math.sin(angle));
+	movingTeapot.rotation.y = (-1.5+angle + Math.PI / 2);
+	
   }
-  pointLight.position.set (50*Math.cos(angle), 0, 50*Math.sin(angle));
+  pointLight.position.set (50*Math.cos(angle), 10, 50*Math.sin(angle));
+  
+  pointteapotMaterial.uniforms.lightpos.value.copy (pointLight.position);
+  pointteapotMaterial.uniforms.opacity.value = Math.abs(Math.sin (angle)); 
+  //console.log(Math.abs(Math.sin (angle)));
+  
   requestAnimationFrame(animate);
+   render();
   renderer.render(scene, camera);
 
+}
+function render() {
+	renderer.render(scene, camera);
 }
 
 </script>
