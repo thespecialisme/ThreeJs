@@ -122,7 +122,6 @@
   		gl_FragColor = vec4 (color, 1);
   }
 </script>
-/////////////////////////////////////////////////
 <script id="vs-texSwap" type="x-shader/x-vertex">
   uniform int which; // 0, 1
   varying vec2 vUv; 
@@ -139,7 +138,6 @@
   	gl_FragColor = vec4 (color, 1.0); 
   }
 </script>
-//////////////////////////////////////////////
 </head>
 <body>
 
@@ -240,7 +238,6 @@ chair = readModel('WoodChair');
 	}
    );
    
-   ////////////////////////////////////////////////
 	var uniforms = {
 		texture: {
 		  type: 't',
@@ -259,7 +256,6 @@ chair = readModel('WoodChair');
 		vertexShader: vertShader,
 		fragmentShader: fragShader
 	  });
-	////////////////////////////////////////////////
 		let loader = new THREE.TextureLoader();
 	  loader.crossOrigin = '';
 	  let mickeys = 'https://i.imgur.com/uZfObQy.png?1';
