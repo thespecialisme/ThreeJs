@@ -16,7 +16,7 @@
     "autodll-webpack-plugin": "^0.4.2",
     "babel-loader": "^8.0.6",
     "express": "^4.17.0",
-    "jquery": "^3.4.1",
+    "jquery": "^3.5.0",
     "socket.io": "^2.2.0",
     "socket.io-client": "^2.2.0",
     "three": "^0.104.0",
